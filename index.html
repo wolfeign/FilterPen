@@ -1,0 +1,766 @@
+﻿<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Filter Pen</title>
+</head>
+
+<body style="margin: 0;">
+    <div style="height: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div style="position: relative; width: 100%; z-index: 100; margin: 6px 0;">
+            <select id="color" title="色" style="margin-left: 6px;">
+                <option value="#2ca9e1" selected="selected">青</option>
+                <option value="#d9333f">赤</option>
+                <option value="#3eb370">緑</option>
+                <option value="#fcc800">黄色</option>
+                <option value="#884898">紫</option>
+                <option value="#b8d200">黄緑</option>
+                <option value="#f6bfbc">ピンク</option>
+                <option value="#f39800">オレンジ</option>
+                <option value="#a0d8ef">水色</option>
+                <option value="#8c6450">茶色</option>
+                <option value="#dcdddd">灰色</option>
+                <option value="#2b2b2b">黒</option>
+            </select>
+
+            <select id="filter" title="フィルター">
+                <option value="none" selected="selected">なし</option>
+                <option value="blur">ぼかし</option>
+                <option value="crayon">クレヨン</option>
+                <option value="feDisplacementMap1">すりガラス</option>
+                <option value="feMorphology3">輪郭</option>
+                <option value="double-border">二重輪郭</option>
+                <option value="outliner">アウトライン</option>
+                <option value="feDropShadow">影</option>
+                <option value="tube">チューブ</option>
+                <option value="filter3961">ライティング</option>
+                <option value="smoothJoin">モーフィズム</option>
+                <option value="filter3414">アルミニウム</option>
+                <option value="filter6646">にじみ</option>
+                <option value="filter8323">ステンドグラス</option>
+                <option value="filter8381">ネオン</option>
+                <option value="filter9315">スプレー</option>
+                <option value="filter9333">キューブ</option>
+                <option value="filter10175">波紋</option>
+            </select>
+
+            <input type="range" id="range" min="10" max="100" value="10" title="線の太さ" style="width: 200px;" />
+
+            <input type="button" id="clear" value="クリア" />
+
+            <div style="position: relative; flex-grow: 1;"></div>
+        </div>
+
+        <div style="position: relative; width: 100%; height: 100%; z-index: 0; cursor: crosshair;">
+            <svg id="svg" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible;">
+                <defs>
+                    <filter id="blur" filterUnits="userSpaceOnUse">
+                        <feGaussianBlur stdDeviation="4" />
+                    </filter>
+
+                    <filter id="crayon" filterUnits="userSpaceOnUse">
+                        <feTurbulence baseFrequency="0.2" numOctaves="3" type="fractalNoise" />
+                        <feDisplacementMap scale="18" xChannelSelector="R" in="SourceGraphic" />
+                    </filter>
+
+                    <filter id="feDisplacementMap1" filterUnits="userSpaceOnUse">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.995" numOctaves="1" seed="1" stitchTiles="noStitch" result="img" />
+                        <feDisplacementMap in="SourceGraphic" in2="img" xChannelSelector="R" yChannelSelector="G" scale="12" />
+                    </filter>
+
+                    <filter id="feMorphology3" filterUnits="userSpaceOnUse" filterres="400,400">
+                        <feMorphology in="SourceAlpha" result="DILATED" operator="dilate" radius="3"></feMorphology>
+
+                        <feFlood flood-color="black" flood-opacity="0.8" result="PINK"></feFlood>
+
+                        <feComposite in="PINK" in2="DILATED" operator="in" result="OUTLINE"></feComposite>
+                        <feMerge>
+                            <feMergeNode in="OUTLINE" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+
+                    <filter id="double-border" filterUnits="userSpaceOnUse" filterres="400,400">
+                        <feMorphology in="SourceAlpha" operator="dilate" radius="10" result="x3" />
+                        <feMorphology in="SourceGraphic" operator="dilate" radius="6" result="x2" />
+                        <feMorphology in="SourceAlpha" operator="dilate" radius="4" result="x1" />
+                        <feMerge>
+                            <feMergeNode in="x3" />
+                            <feMergeNode in="x2" />
+                            <feMergeNode in="x1" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+
+                    <filter id="outliner" filterUnits="userSpaceOnUse">
+                        <feMorphology operator="dilate" radius="3" in="SourceGraphic" result="THICKNESS" />
+                        <feComposite operator="out" in="THICKNESS" in2="SourceGraphic"></feComposite>
+                    </filter>
+
+                    <filter id="feDropShadow" filterUnits="userSpaceOnUse">
+                        <feDropShadow dx="8" dy="8" stdDeviation="0" flood-color="black" flood-opacity="0.4" />
+                    </filter>
+
+                    <filter id="tube" filterUnits="userSpaceOnUse">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                        <feSpecularLighting in="blur" lighting-color="white" surfaceScale="5" result="light" specularConstant="1">
+                            <feDistantLight azimuth="-135" elevation="45" />
+                        </feSpecularLighting>
+                        <feMerge result="merge">
+                            <feMergeNode in="SourceGraphic" />
+                            <feMergeNode in="light" />
+                        </feMerge>
+                        <feComposite in="merge" in2="SourceGraphic" operator="in" />
+                    </filter>
+
+                    <filter color-interpolation-filters="sRGB" id="filter3961" filterUnits="userSpaceOnUse">
+                        <feColorMatrix in="SourceGraphic" result="result0" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.85 0" id="feColorMatrix3963" />
+                        <feGaussianBlur stdDeviation="7" in="SourceAlpha" id="feGaussianBlur3965" />
+                        <feSpecularLighting result="result1" specularExponent="25" specularConstant="0.89999998" surfaceScale="5" id="feSpecularLighting3967">
+                            <feDistantLight azimuth="225" elevation="60" id="feDistantLight3969" />
+                        </feSpecularLighting>
+                        <feComposite in2="result0" operator="atop" id="feComposite3971" />
+                    </filter>
+
+                    <filter id="smoothJoin" filterUnits="userSpaceOnUse">
+                        <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="8" />
+                        <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="joint" />
+                    </filter>
+
+                    <filter id="filter3414"
+                            style="color-interpolation-filters:sRGB"
+                            inkscape:label="Aluminium"
+                            inkscape:menu-tooltip="Aluminium effect with sharp brushed reflections"
+                            inkscape:menu="Non-Realistic 3D Shaders"
+                            height="1.5"
+                            y="-0.25"
+                            width="1.5"
+                            x="-0.25">
+                        <feGaussianBlur id="feGaussianBlur3394"
+                                        in="SourceGraphic"
+                                        stdDeviation="5"
+                                        result="result8" />
+                        <feComposite id="feComposite3396"
+                                     result="result22"
+                                     in2="SourceGraphic"
+                                     operator="xor" />
+                        <feComposite id="feComposite3398"
+                                     in="result22"
+                                     in2="result22"
+                                     result="result20"
+                                     operator="arithmetic"
+                                     k2="1" />
+                        <feComposite id="feComposite3400"
+                                     result="result6"
+                                     operator="over"
+                                     in="result20"
+                                     in2="result22" />
+                        <feOffset id="feOffset3402"
+                                  result="result21"
+                                  in="result6" />
+                        <feDisplacementMap id="feDisplacementMap3404"
+                                           in="result21"
+                                           xChannelSelector="A"
+                                           yChannelSelector="A"
+                                           scale="100"
+                                           result="result4"
+                                           in2="result20" />
+                        <feComposite id="feComposite3406"
+                                     in="result4"
+                                     k3="0.5"
+                                     result="fbSourceGraphic"
+                                     operator="arithmetic"
+                                     k1="1"
+                                     in2="SourceGraphic" />
+                        <feComposite id="feComposite3408"
+                                     in="fbSourceGraphic"
+                                     operator="in"
+                                     result="result12"
+                                     in2="result4" />
+                        <feComposite id="feComposite3410"
+                                     result="result18"
+                                     operator="in"
+                                     in2="SourceGraphic" />
+                        <feComposite id="feComposite3412"
+                                     in="result18"
+                                     operator="in"
+                                     in2="SourceGraphic"
+                                     result="result19" />
+                    </filter>
+
+                    <filter id="filter6646"
+                            inkscape:label="Ink Blot"
+                            filterUnits="userSpaceOnUse"
+                            style="color-interpolation-filters:sRGB;">
+                        <feGaussianBlur id="feGaussianBlur6636"
+                                        result="blur1"
+                                        stdDeviation="2.38 2.69697"
+                                        in="SourceGraphic" />
+                        <feTurbulence id="feTurbulence6638"
+                                      result="turbulence"
+                                      seed="100"
+                                      numOctaves="1"
+                                      baseFrequency="0.0397"
+                                      type="fractalNoise" />
+                        <feDisplacementMap id="feDisplacementMap6640"
+                                           result="map"
+                                           scale="19.5335"
+                                           yChannelSelector="G"
+                                           xChannelSelector="R"
+                                           in2="turbulence"
+                                           in="blur1" />
+                        <feGaussianBlur id="feGaussianBlur6642"
+                                        result="blur2"
+                                        stdDeviation="5.83"
+                                        in="map" />
+                        <feComposite id="feComposite6644"
+                                     result="composite"
+                                     operator="over"
+                                     in2="map"
+                                     in="blur2" />
+                    </filter>
+
+                    <filter id="filter7004"
+                            style="color-interpolation-filters:sRGB;"
+                            height="1.4"
+                            width="1.4"
+                            y="-0.2"
+                            x="-0.2"
+                            inkscape:menu-tooltip="Burst balloon texture crumpled and with holes"
+                            inkscape:menu="Textures"
+                            inkscape:label="Burst">
+                        <feTurbulence id="feTurbulence6980"
+                                      result="result8"
+                                      numOctaves="5"
+                                      baseFrequency="0.03"
+                                      type="fractalNoise"
+                                      seed="8" />
+                        <feColorMatrix id="feColorMatrix6982"
+                                       result="result5"
+                                       values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 4 -0.7 " />
+                        <feComposite id="feComposite6984"
+                                     in="SourceGraphic"
+                                     operator="in"
+                                     in2="result5"
+                                     result="result11" />
+                        <feDisplacementMap id="feDisplacementMap6986"
+                                           in2="result8"
+                                           in="result11"
+                                           xChannelSelector="R"
+                                           yChannelSelector="G"
+                                           scale="50"
+                                           result="result4" />
+                        <feComposite id="feComposite6988"
+                                     k2="1.3"
+                                     in="result4"
+                                     operator="arithmetic"
+                                     in2="SourceAlpha"
+                                     result="result7" />
+                        <feColorMatrix id="feColorMatrix6990"
+                                       values="1 0 0 -1 0 1 0 1 -1 0 1 0 0 -1 0 -0.8 -1 0 4 -2.5 "
+                                       in="result7"
+                                       result="fbSourceGraphicAlpha" />
+                        <feGaussianBlur id="feGaussianBlur6992"
+                                        result="result10"
+                                        stdDeviation="0.5" />
+                        <feDiffuseLighting id="feDiffuseLighting6996"
+                                           in="result10"
+                                           lighting-color="rgb(255,255,255)"
+                                           result="result6"
+                                           diffuseConstant="0.4"
+                                           surfaceScale="15">
+                            <feDistantLight id="feDistantLight6994"
+                                            elevation="25"
+                                            azimuth="235" />
+                        </feDiffuseLighting>
+                        <feComposite id="feComposite6998"
+                                     in2="result7"
+                                     in="result6"
+                                     result="result2"
+                                     operator="in" />
+                        <feComposite id="feComposite7000"
+                                     result="result12"
+                                     k3="0.8"
+                                     k2="0.8"
+                                     operator="arithmetic"
+                                     in2="result7" />
+                        <feBlend id="feBlend7002"
+                                 mode="lighten"
+                                 in2="result12" />
+                    </filter>
+
+                    <filter id="filter8323"
+                            style="color-interpolation-filters:sRGB;"
+                            filterUnits="userSpaceOnUse"
+                            inkscape:menu-tooltip="Illuminated stained glass effect"
+                            inkscape:menu="Bevels"
+                            inkscape:label="Stained Glass">
+                        <feBlend id="feBlend8301"
+                                 mode="screen"
+                                 result="result1"
+                                 in2="SourceGraphic" />
+                        <feGaussianBlur id="feGaussianBlur8303"
+                                        result="result6"
+                                        stdDeviation="7" />
+                        <feComposite id="feComposite8305"
+                                     result="result7"
+                                     in2="result6"
+                                     in="result6"
+                                     operator="xor" />
+                        <feComposite id="feComposite8307"
+                                     result="result92"
+                                     in="result6"
+                                     operator="atop"
+                                     in2="result1" />
+                        <feComposite id="feComposite8309"
+                                     in2="result92"
+                                     operator="xor"
+                                     in="result7"
+                                     result="result4" />
+                        <feGaussianBlur id="feGaussianBlur8311"
+                                        in="result4"
+                                        stdDeviation="0.7"
+                                        result="result3" />
+                        <feSpecularLighting id="feSpecularLighting8315"
+                                            surfaceScale="4"
+                                            specularConstant="1.5"
+                                            specularExponent="50"
+                                            result="result5">
+                            <fePointLight id="fePointLight8313"
+                                          x="-5000"
+                                          y="-8000"
+                                          z="20000" />
+                        </feSpecularLighting>
+                        <feComposite id="feComposite8317"
+                                     result="result93"
+                                     in2="SourceGraphic"
+                                     operator="arithmetic"
+                                     k2="1"
+                                     k3="1"
+                                     in="result3" />
+                        <feComposite id="feComposite8319"
+                                     result="result94"
+                                     in2="result93"
+                                     operator="atop"
+                                     in="result5" />
+                        <feBlend id="feBlend8321"
+                                 in2="result94"
+                                 mode="multiply" />
+                    </filter>
+
+                    <filter id="filter8381"
+                            style="color-interpolation-filters:sRGB;"
+                            filterUnits="userSpaceOnUse"
+                            inkscape:menu-tooltip="Neon light effect"
+                            inkscape:menu="Bevels"
+                            inkscape:label="Neon">
+                        <feGaussianBlur id="feGaussianBlur8359"
+                                        result="result1"
+                                        stdDeviation="1" />
+                        <feComposite id="feComposite8361"
+                                     operator="in"
+                                     result="result4"
+                                     in2="result1"
+                                     in="result1" />
+                        <feGaussianBlur id="feGaussianBlur8363"
+                                        in="result4"
+                                        result="result6"
+                                        stdDeviation="7" />
+                        <feComposite id="feComposite8365"
+                                     result="result8"
+                                     in2="result4"
+                                     in="result6"
+                                     operator="over" />
+                        <feComposite id="feComposite8367"
+                                     in2="result8"
+                                     in="result6"
+                                     result="fbSourceGraphic"
+                                     operator="in" />
+                        <feSpecularLighting id="feSpecularLighting8371"
+                                            in="fbSourceGraphic"
+                                            result="result1"
+                                            lighting-color="rgb(255,255,255)"
+                                            surfaceScale="2.5"
+                                            specularConstant="2"
+                                            specularExponent="45">
+                            <fePointLight id="fePointLight8369"
+                                          x="-5000"
+                                          y="-10000"
+                                          z="20000" />
+                        </feSpecularLighting>
+                        <feComposite id="feComposite8373"
+                                     in2="fbSourceGraphic"
+                                     in="result1"
+                                     result="result2"
+                                     operator="in" />
+                        <feComposite id="feComposite8375"
+                                     in2="result2"
+                                     in="fbSourceGraphic"
+                                     result="result4"
+                                     operator="arithmetic"
+                                     k2="1.2"
+                                     k3="1.5" />
+                        <feComposite id="feComposite8377"
+                                     result="result9"
+                                     in2="result4"
+                                     in="result9"
+                                     operator="over" />
+                        <feBlend id="feBlend8379"
+                                 in2="result9"
+                                 mode="screen" />
+                    </filter>
+
+                    <filter id="filter9315"
+                            style="color-interpolation-filters:sRGB;"
+                            filterUnits="userSpaceOnUse"
+                            inkscape:menu-tooltip="Convert to small scattered particles with some thickness"
+                            inkscape:menu="Scatter"
+                            inkscape:label="Air Spray">
+                        <feGaussianBlur id="feGaussianBlur9303"
+                                        result="result1"
+                                        stdDeviation="0.01" />
+                        <feBlend id="feBlend9305"
+                                 mode="multiply"
+                                 result="fbSourceGraphic"
+                                 in2="result1" />
+                        <feTurbulence id="feTurbulence9307"
+                                      result="result3"
+                                      numOctaves="3"
+                                      seed="0"
+                                      type="fractalNoise"
+                                      baseFrequency="0.8" />
+                        <feDisplacementMap id="feDisplacementMap9309"
+                                           in2="result3"
+                                           result="result2"
+                                           scale="50"
+                                           yChannelSelector="G"
+                                           xChannelSelector="R"
+                                           in="fbSourceGraphic" />
+                        <feMorphology id="feMorphology9311"
+                                      result="result4"
+                                      operator="dilate"
+                                      radius="1" />
+                        <feBlend id="feBlend9313"
+                                 in2="result2"
+                                 mode="screen" />
+                    </filter>
+
+                    <filter id="filter9333"
+                            filterUnits="userSpaceOnUse"
+                            style="color-interpolation-filters:sRGB;"
+                            inkscape:menu-tooltip="Scattered cubes; adjust the Morphology primitive to vary size"
+                            inkscape:menu="Scatter"
+                            inkscape:label="Cubes">
+                        <feTurbulence id="feTurbulence9317"
+                                      type="fractalNoise"
+                                      numOctaves="1"
+                                      baseFrequency="0.14" />
+                        <feColorMatrix id="feColorMatrix9319"
+                                       result="result5"
+                                       values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 6 -3.5 " />
+                        <feComposite id="feComposite9321"
+                                     result="result6"
+                                     in="SourceGraphic"
+                                     operator="in"
+                                     in2="result5" />
+                        <feMorphology id="feMorphology9323"
+                                      in="result6"
+                                      operator="dilate"
+                                      radius="5"
+                                      result="result3" />
+                        <feDisplacementMap id="feDisplacementMap9325"
+                                           in2="result3"
+                                           in="result3"
+                                           xChannelSelector="R"
+                                           yChannelSelector="A"
+                                           scale="0"
+                                           result="result4" />
+                        <feComposite id="feComposite9327"
+                                     k3="1"
+                                     k1="1"
+                                     result="result2"
+                                     operator="arithmetic"
+                                     in2="result4" />
+                        <feBlend id="feBlend9329"
+                                 in2="result2"
+                                 in="result2"
+                                 mode="darken" />
+                        <feConvolveMatrix id="feConvolveMatrix9331"
+                                          edgeMode="duplicate"
+                                          divisor="2"
+                                          targetY="1"
+                                          targetX="1"
+                                          kernelMatrix="2 0 0 0 1 0 0 0 -1 "
+                                          order="3 3" />
+                    </filter>
+
+                    <filter id="filter10175"
+                            filterUnits="userSpaceOnUse"
+                            style="color-interpolation-filters:sRGB;"
+                            inkscape:menu-tooltip="Horizontal rippling of edges"
+                            inkscape:menu="Distort"
+                            inkscape:label="Ripple">
+                        <feTurbulence id="feTurbulence10169"
+                                      baseFrequency="0.002 0.107"
+                                      numOctaves="1" />
+                        <feColorMatrix id="feColorMatrix10171"
+                                       result="result91"
+                                       values="2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0.5" />
+                        <feDisplacementMap id="feDisplacementMap10173"
+                                           in2="result91"
+                                           in="SourceGraphic"
+                                           scale="14.3"
+                                           xChannelSelector="R"
+                                           yChannelSelector="A" />
+                    </filter>
+                </defs>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        // 3次ベジエ曲線の頂点を得る
+        // Qiitaにあったもの
+        // https://qiita.com/kwst/items/16e4877890a19826ba7f
+        function catmullRom2bezier(pts) {
+            const cubics = [];
+            for (let i = 0, iLen = pts.length; i < iLen; i++) {
+                let p = [
+                    pts[i - 1],
+                    pts[i],
+                    pts[i + 1],
+                    pts[i + 2]
+                ];
+                if (i === 0) {
+                    p[0] = {
+                        x: pts[0].x,
+                        y: pts[0].y
+                    };
+                }
+                if (i === iLen - 2) {
+                    p[3] = {
+                        x: pts[iLen - 2].x,
+                        y: pts[iLen - 2].y
+                    };
+                }
+                if (i === iLen - 1) {
+                    p[2] = {
+                        x: pts[iLen - 1].x,
+                        y: pts[iLen - 1].y
+                    };
+                    p[3] = {
+                        x: pts[iLen - 1].x,
+                        y: pts[iLen - 1].y
+                    };
+                }
+                const val = 6;
+                cubics.push([
+                    (-p[0].x + val * p[1].x + p[2].x) / val,
+                    (-p[0].y + val * p[1].y + p[2].y) / val,
+                    (p[1].x + val * p[2].x - p[3].x) / val,
+                    (p[1].y + val * p[2].y - p[3].y) / val,
+                    p[2].x,
+                    p[2].y
+                ]);
+            }
+            return cubics;
+        }
+
+        // ポリラインを単純化
+        // threshold : 距離のしきい値
+        function toSimple(points, threshold) {
+            const simple = [];
+
+            if (points.length >= 1)
+                simple.push(points[0]);
+
+            let distance = 0;
+            for (let i = 1; i < points.length - 1; i++) {
+                distance += Math.sqrt((points[i - 1].x - points[i].x) * (points[i - 1].x - points[i].x) + (points[i - 1].y - points[i].y) * (points[i - 1].y - points[i].y));
+
+                if (distance >= threshold) {
+                    if (!isCollinear(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y)) {
+                        distance = 0;
+
+                        if (isCollinearApproximatePoint(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y)) {
+                            simple.push({
+                                x: (points[i - 1].x + points[i + 1].x) / 2,
+                                y: (points[i - 1].y + points[i + 1].y) / 2
+                            });
+                        } else {
+                            simple.push(points[i]);
+                        }
+                    }
+                }
+            }
+
+            if (points.length >= 2)
+                simple.push(points[points.length - 1]);
+
+            return simple;
+        }
+
+        // 3点が同一直線上にあるか
+        function isCollinear(x1, y1, x2, y2, x3, y3) {
+            const ab = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+            const ac = Math.sqrt((x3 - x1) * (x3 - x1) + (y3 - y1) * (y3 - y1));
+            const bc = Math.sqrt((x3 - x2) * (x3 - x2) + (y3 - y2) * (y3 - y2));
+
+            if (ab + ac === bc)
+                return true;
+            else if (ab + bc === ac)
+                return true;
+            else if (ac + bc === ab)
+                return true;
+
+            return false;
+        }
+
+        // 3点の近似点が同一直線上にあるか
+        function isCollinearApproximatePoint(x1, y1, x2, y2, x3, y3) {
+            const ab = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+            const ac = Math.sqrt((x3 - x1) * (x3 - x1) + (y3 - y1) * (y3 - y1));
+            const bc = Math.sqrt((x3 - x2) * (x3 - x2) + (y3 - y2) * (y3 - y2));
+
+            if (Math.abs(ab + ac - bc) <= 1)
+                return true;
+            else if (Math.abs(ab + bc - ac) <= 1)
+                return true;
+            else if (Math.abs(ac + bc - ab) <= 1)
+                return true;
+
+            return false;
+        }
+
+        const svg = document.getElementById("svg");
+
+        const coordinates = [];
+        let strokeColor = document.getElementById("color").value;
+        let strokeWidth = parseInt(document.getElementById("range").value);
+        let strokeFilter = document.getElementById("filter").value;
+        let path = null;
+
+        document.getElementById("color").addEventListener("change", () => {
+            strokeColor = document.getElementById("color").value;
+        }, false);
+
+        document.getElementById("range").addEventListener("change", () => {
+            strokeWidth = parseInt(document.getElementById("range").value);
+        }, false);
+
+        document.getElementById("filter").addEventListener("change", () => {
+            strokeFilter = document.getElementById("filter").value;
+        }, false);
+
+        document.getElementById("clear").addEventListener("click", () => {
+            for (; ;) {
+                const element = svg.getElementsByTagName("path");
+
+                if (0 === element.length)
+                    break;
+
+                element[0].remove();
+            }
+        }, false);
+
+        svg.addEventListener("mousedown", (event) => {
+            if (event.button === 0) {
+                path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("stroke", strokeColor);
+                path.setAttribute("stroke-width", strokeWidth);
+                path.setAttribute("stroke-linecap", "round");
+                path.setAttribute("stroke-linejoin", "round");
+                path.setAttribute("fill", "none");
+
+                if ("none" === strokeFilter)
+                    path.setAttribute("filter", "none");
+                else
+                    path.setAttribute("filter", "url(#" + strokeFilter + ")");
+
+                svg.appendChild(path);
+
+                coordinates.length = 0;
+                coordinates.push({
+                    x: event.offsetX,
+                    y: event.offsetY
+                });
+            }
+        }, false);
+
+        svg.addEventListener("mousemove", (event) => {
+            if (event.buttons & 1) {
+                coordinates.push({
+                    x: event.offsetX,
+                    y: event.offsetY
+                });
+
+                let threshold = 12 - strokeWidth * 2;
+                if (threshold < 0)
+                    threshold = 0;
+
+                const cubics = catmullRom2bezier(toSimple(coordinates, threshold));
+
+                let attribute = `M${coordinates[0].x},${coordinates[0].y}`;
+                for (let j = 0; j < cubics.length; j++) {
+                    for (let k = 0; k < 6; k++) {
+                        cubics[j][k] = parseFloat(cubics[j][k].toFixed(3));
+                    }
+
+                    attribute += ` C${cubics[j][0]},${cubics[j][1]} ${cubics[j][2]},${cubics[j][3]} ${cubics[j][4]},${cubics[j][5]}`;
+                }
+
+                path.setAttribute("d", attribute);
+            }
+        }, false);
+
+        svg.addEventListener("touchstart", (event) => {
+            path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("stroke", strokeColor);
+            path.setAttribute("stroke-width", strokeWidth);
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+            path.setAttribute("fill", "none");
+
+            if ("none" === strokeFilter)
+                path.setAttribute("filter", "none");
+            else
+                path.setAttribute("filter", "url(#" + strokeFilter + ")");
+
+            svg.appendChild(path);
+
+            const rect = svg.getBoundingClientRect();
+
+            coordinates.length = 0;
+            coordinates.push({
+                x: event.changedTouches[0].pageX - rect.left,
+                y: event.changedTouches[0].pageY - rect.top
+            });
+        }, false);
+
+        svg.addEventListener("touchmove", (event) => {
+            const rect = svg.getBoundingClientRect();
+
+            coordinates.push({
+                x: event.changedTouches[0].pageX - rect.left,
+                y: event.changedTouches[0].pageY - rect.top
+            });
+
+            let threshold = 12 - strokeWidth * 2;
+            if (threshold < 0)
+                threshold = 0;
+
+            const cubics = catmullRom2bezier(toSimple(coordinates, threshold));
+
+            let attribute = `M${coordinates[0].x},${coordinates[0].y}`;
+            for (let j = 0; j < cubics.length; j++) {
+                for (let k = 0; k < 6; k++) {
+                    cubics[j][k] = parseFloat(cubics[j][k].toFixed(3));
+                }
+
+                attribute += ` C${cubics[j][0]},${cubics[j][1]} ${cubics[j][2]},${cubics[j][3]} ${cubics[j][4]},${cubics[j][5]}`;
+            }
+
+            path.setAttribute("d", attribute);
+        }, false);
+    </script>
+</body>
+</html>
