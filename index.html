@@ -1,13 +1,16 @@
-﻿<html>
+﻿<!DOCTYPE html>
+<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Filter Pen</title>
+    <meta name="author" content="Wolfeign">
+
+    <title>Filter Pen 1.01</title>
 </head>
 
 <body style="margin: 0;">
-    <div style="height: 100%; display: flex; flex-direction: column; align-items: center;">
-        <div style="position: relative; width: 100%; z-index: 100; margin: 6px 0;">
-            <select id="color" title="色" style="margin-left: 6px;">
+    <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+        <div style="position: relative; width: 100%; z-index: 100; margin: 6px 0; display: flex; flex-direction: row; align-items: center;">
+            <select id="color" title="色" style="margin: 0 8px;">
                 <option value="#2ca9e1" selected="selected">青</option>
                 <option value="#d9333f">赤</option>
                 <option value="#3eb370">緑</option>
@@ -22,7 +25,7 @@
                 <option value="#2b2b2b">黒</option>
             </select>
 
-            <select id="filter" title="フィルター">
+            <select id="filter" title="フィルター" style="margin-right: 8px;">
                 <option value="none" selected="selected">なし</option>
                 <option value="blur">ぼかし</option>
                 <option value="crayon">クレヨン</option>
@@ -43,11 +46,9 @@
                 <option value="filter10175">波紋</option>
             </select>
 
-            <input type="range" id="range" min="10" max="100" value="10" title="線の太さ" style="width: 200px;" />
+            <input type="range" id="width" min="1" max="100" value="10" title="線の太さ" style="width: 200px; margin-right: 8px;" />
 
             <input type="button" id="clear" value="クリア" />
-
-            <div style="position: relative; flex-grow: 1;"></div>
         </div>
 
         <div style="position: relative; width: 100%; height: 100%; z-index: 0; cursor: crosshair;">
@@ -519,8 +520,7 @@
 
     <script>
         // 3次ベジエ曲線の頂点を得る
-        // Qiitaにあったもの
-        // https://qiita.com/kwst/items/16e4877890a19826ba7f
+        // 参考URL:https://qiita.com/kwst/items/16e4877890a19826ba7f
         function catmullRom2bezier(pts) {
             const cubics = [];
             for (let i = 0, iLen = pts.length; i < iLen; i++) {
@@ -566,27 +566,42 @@
         }
 
         // ポリラインを単純化
-        // threshold : 距離のしきい値
-        function toSimple(points, threshold) {
+        function toSimplePolyline(points, width) {
             const simple = [];
 
             if (points.length >= 1)
                 simple.push(points[0]);
 
             let distance = 0;
-            for (let i = 1; i < points.length - 1; i++) {
-                distance += Math.sqrt((points[i - 1].x - points[i].x) * (points[i - 1].x - points[i].x) + (points[i - 1].y - points[i].y) * (points[i - 1].y - points[i].y));
+            for (let i = 2; i < points.length - 1; i++) {
+                if (simple.length < 1) {
+                    simple.push(points[i]);
+                    continue;
+                }
 
-                if (distance >= threshold) {
-                    if (!isCollinear(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y)) {
-                        distance = 0;
+                const x1 = simple[simple.length - 1].x;
+                const y1 = simple[simple.length - 1].y;
 
-                        if (isCollinearApproximatePoint(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y)) {
-                            simple.push({
-                                x: (points[i - 1].x + points[i + 1].x) / 2,
-                                y: (points[i - 1].y + points[i + 1].y) / 2
-                            });
-                        } else {
+                const distance1 = getLinePointDistance(points[i].x, points[i].y, x1, y1, points[i + 1].x, points[i + 1].y);
+                if (distance1 >= 0.1) {
+                    if (simple.length < 2) {
+                        simple.push(points[i]);
+                        continue;
+                    }
+
+                    const x2 = simple[simple.length - 2].x;
+                    const y2 = simple[simple.length - 2].y;
+
+                    const distance2 = getLinePointDistance(points[i].x, points[i].y, x1, y1, x2, y2)
+                    if (distance2 >= 0.1) {
+                        // しきい値(数値はわりと適当、調整次第でもっと滑らかになるかも)
+                        let threshold = 30 - width / 2;
+                        if (threshold < 0)
+                            threshold = 0;
+
+                        distance += Math.sqrt((x1 - points[i].x) * (x1 - points[i].x) + (y1 - points[i].y) * (y1 - points[i].y));
+                        if (distance >= threshold) {
+                            distance = 0;
                             simple.push(points[i]);
                         }
                     }
@@ -599,52 +614,71 @@
             return simple;
         }
 
-        // 3点が同一直線上にあるか
-        function isCollinear(x1, y1, x2, y2, x3, y3) {
-            const ab = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-            const ac = Math.sqrt((x3 - x1) * (x3 - x1) + (y3 - y1) * (y3 - y1));
-            const bc = Math.sqrt((x3 - x2) * (x3 - x2) + (y3 - y2) * (y3 - y2));
+        // 点と線の距離
+        function getLinePointDistance(x, y, x1, y1, x2, y2) {
+            const sqrt = (y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1);
 
-            if (ab + ac === bc)
-                return true;
-            else if (ab + bc === ac)
-                return true;
-            else if (ac + bc === ab)
-                return true;
+            if (0 === sqrt)
+                return 0;
 
-            return false;
-        }
-
-        // 3点の近似点が同一直線上にあるか
-        function isCollinearApproximatePoint(x1, y1, x2, y2, x3, y3) {
-            const ab = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-            const ac = Math.sqrt((x3 - x1) * (x3 - x1) + (y3 - y1) * (y3 - y1));
-            const bc = Math.sqrt((x3 - x2) * (x3 - x2) + (y3 - y2) * (y3 - y2));
-
-            if (Math.abs(ab + ac - bc) <= 1)
-                return true;
-            else if (Math.abs(ab + bc - ac) <= 1)
-                return true;
-            else if (Math.abs(ac + bc - ab) <= 1)
-                return true;
-
-            return false;
+            return Math.abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1) / Math.sqrt(sqrt);
         }
 
         const svg = document.getElementById("svg");
 
         const coordinates = [];
         let strokeColor = document.getElementById("color").value;
-        let strokeWidth = parseInt(document.getElementById("range").value);
+        let strokeWidth = parseInt(document.getElementById("width").value);
         let strokeFilter = document.getElementById("filter").value;
         let path = null;
+
+        function onMouseDown() {
+            path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("stroke", strokeColor);
+            path.setAttribute("stroke-width", strokeWidth);
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+            path.setAttribute("fill", "none");
+
+            if ("none" === strokeFilter)
+                path.setAttribute("filter", "none");
+            else
+                path.setAttribute("filter", "url(#" + strokeFilter + ")");
+
+            svg.appendChild(path);
+
+            coordinates.length = 0;
+        }
+
+        function onMouseMove(x, y) {
+            coordinates.push({
+                x: x,
+                y: y
+            });
+
+            const cubics = catmullRom2bezier(toSimplePolyline(coordinates, strokeWidth));
+
+            let attribute = `M${coordinates[0].x},${coordinates[0].y}`;
+            for (let i = 0; i < cubics.length; i++) {
+                for (let j = 0; j < 6; j++) {
+                    cubics[i][j] = parseFloat(cubics[i][j].toFixed(3));
+                }
+
+                attribute += ` C${cubics[i][0]},${cubics[i][1]} ${cubics[i][2]},${cubics[i][3]} ${cubics[i][4]},${cubics[i][5]}`;
+            }
+
+            path.setAttribute("d", attribute);
+        }
 
         document.getElementById("color").addEventListener("change", () => {
             strokeColor = document.getElementById("color").value;
         }, false);
 
-        document.getElementById("range").addEventListener("change", () => {
-            strokeWidth = parseInt(document.getElementById("range").value);
+        document.getElementById("width").addEventListener("change", () => {
+            strokeWidth = parseInt(document.getElementById("width").value);
+        }, false);
+        document.getElementById("width").addEventListener("mousemove", () => {
+            document.getElementById("width").title = "線の太さ：" + strokeWidth + "px";
         }, false);
 
         document.getElementById("filter").addEventListener("change", () => {
@@ -663,103 +697,28 @@
         }, false);
 
         svg.addEventListener("mousedown", (event) => {
-            if (event.button === 0) {
-                path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("stroke", strokeColor);
-                path.setAttribute("stroke-width", strokeWidth);
-                path.setAttribute("stroke-linecap", "round");
-                path.setAttribute("stroke-linejoin", "round");
-                path.setAttribute("fill", "none");
-
-                if ("none" === strokeFilter)
-                    path.setAttribute("filter", "none");
-                else
-                    path.setAttribute("filter", "url(#" + strokeFilter + ")");
-
-                svg.appendChild(path);
-
-                coordinates.length = 0;
-                coordinates.push({
-                    x: event.offsetX,
-                    y: event.offsetY
-                });
+            if (0 === event.button) {
+                onMouseDown();
+                onMouseMove(event.offsetX, event.offsetY);
             }
         }, false);
 
         svg.addEventListener("mousemove", (event) => {
-            if (event.buttons & 1) {
-                coordinates.push({
-                    x: event.offsetX,
-                    y: event.offsetY
-                });
-
-                let threshold = 12 - strokeWidth * 2;
-                if (threshold < 0)
-                    threshold = 0;
-
-                const cubics = catmullRom2bezier(toSimple(coordinates, threshold));
-
-                let attribute = `M${coordinates[0].x},${coordinates[0].y}`;
-                for (let j = 0; j < cubics.length; j++) {
-                    for (let k = 0; k < 6; k++) {
-                        cubics[j][k] = parseFloat(cubics[j][k].toFixed(3));
-                    }
-
-                    attribute += ` C${cubics[j][0]},${cubics[j][1]} ${cubics[j][2]},${cubics[j][3]} ${cubics[j][4]},${cubics[j][5]}`;
-                }
-
-                path.setAttribute("d", attribute);
-            }
+            if (event.buttons & 1)
+                onMouseMove(event.offsetX, event.offsetY);
         }, false);
 
         svg.addEventListener("touchstart", (event) => {
-            path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("stroke", strokeColor);
-            path.setAttribute("stroke-width", strokeWidth);
-            path.setAttribute("stroke-linecap", "round");
-            path.setAttribute("stroke-linejoin", "round");
-            path.setAttribute("fill", "none");
-
-            if ("none" === strokeFilter)
-                path.setAttribute("filter", "none");
-            else
-                path.setAttribute("filter", "url(#" + strokeFilter + ")");
-
-            svg.appendChild(path);
-
             const rect = svg.getBoundingClientRect();
 
-            coordinates.length = 0;
-            coordinates.push({
-                x: event.changedTouches[0].pageX - rect.left,
-                y: event.changedTouches[0].pageY - rect.top
-            });
+            onMouseDown();
+            onMouseMove(event.changedTouches[0].pageX - rect.left, event.changedTouches[0].pageY - rect.top);
         }, false);
 
         svg.addEventListener("touchmove", (event) => {
             const rect = svg.getBoundingClientRect();
 
-            coordinates.push({
-                x: event.changedTouches[0].pageX - rect.left,
-                y: event.changedTouches[0].pageY - rect.top
-            });
-
-            let threshold = 12 - strokeWidth * 2;
-            if (threshold < 0)
-                threshold = 0;
-
-            const cubics = catmullRom2bezier(toSimple(coordinates, threshold));
-
-            let attribute = `M${coordinates[0].x},${coordinates[0].y}`;
-            for (let j = 0; j < cubics.length; j++) {
-                for (let k = 0; k < 6; k++) {
-                    cubics[j][k] = parseFloat(cubics[j][k].toFixed(3));
-                }
-
-                attribute += ` C${cubics[j][0]},${cubics[j][1]} ${cubics[j][2]},${cubics[j][3]} ${cubics[j][4]},${cubics[j][5]}`;
-            }
-
-            path.setAttribute("d", attribute);
+            onMouseMove(event.changedTouches[0].pageX - rect.left, event.changedTouches[0].pageY - rect.top);
         }, false);
     </script>
 </body>
